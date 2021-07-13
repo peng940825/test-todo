@@ -1,5 +1,37 @@
 <script>
-export default {};
+export default {
+  data: () => ({
+    todo: '',
+    todoList: null,
+  }),
+  methods: {
+    addNewTodoItem() {
+      const data = {
+        key: Date.now(),
+        text: this.todo,
+        disabled: true,
+      };
+      this.todoList.push(data);
+      this.$setLocalStorage('todoList', this.todoList);
+      this.todo = '';
+    },
+    editTodoItem(target) {
+      target.disabled = false;
+    },
+    confirmTodoItem(target) {
+      target.disabled = true;
+      this.$setLocalStorage('todoList', this.todoList);
+    },
+    deleteTodoItem(target) {
+      this.todoList.splice(target, 1);
+      this.$setLocalStorage('todoList', this.todoList);
+    },
+  },
+  created() {
+    if (!this.$getLocalStorage('todoList')) this.$setLocalStorage('todoList', []);
+    this.todoList = this.$getLocalStorage('todoList');
+  },
+};
 </script>
 
 <template>
@@ -7,22 +39,38 @@ export default {};
     <div class="todo-list">
       <div class="header d-flex">
         <v-checkbox color="success" value="success" hide-details></v-checkbox>
-        <v-text-field label="" placeholder="What needs to be done ?" solo></v-text-field>
+        <v-text-field
+          solo
+          v-model="todo"
+          @keyup.enter="addNewTodoItem"
+          placeholder="What needs to be done ?"
+        ></v-text-field>
       </div>
 
       <div class="main">
-        <div class="todo-list-item d-flex">
+        <div class="todo-list-item d-flex" v-for="(todo, key) in todoList" :key="todo.key">
           <v-checkbox color="success" value="success" hide-details></v-checkbox>
-          <v-text-field solo></v-text-field>
-          <v-btn class="ml-3" color="success" elevation="3">Edit</v-btn>
-          <v-btn class="ml-3" color="error" elevation="3">Del</v-btn>
-        </div>
-
-        <div class="todo-list-item d-flex">
-          <v-checkbox color="success" value="success" hide-details></v-checkbox>
-          <v-text-field solo></v-text-field>
-          <v-btn class="ml-3" color="success" elevation="3">Edit</v-btn>
-          <v-btn class="ml-3" color="error" elevation="3">Del</v-btn>
+          <v-text-field
+            solo
+            v-model="todo.text"
+            :disabled="todo.disabled"
+            @keyup.enter="confirmTodoItem(todo)"
+          ></v-text-field>
+          <v-btn
+            class="ml-3"
+            color="primary"
+            elevation="3"
+            v-if="todo.disabled"
+            @click="editTodoItem(todo)"
+          >
+            Edit
+          </v-btn>
+          <v-btn class="ml-3" color="success" elevation="3" v-else @click="confirmTodoItem(todo)">
+            Confirm
+          </v-btn>
+          <v-btn class="ml-3" color="error" elevation="3" @click="deleteTodoItem(key)">
+            Delete
+          </v-btn>
         </div>
       </div>
 
