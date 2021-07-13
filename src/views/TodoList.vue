@@ -1,12 +1,11 @@
 <script>
 export default {
   data: () => ({
-    all: false,
     todo: '',
     todoList: [],
+    status: 'all',
   }),
   methods: {
-    // about todo item
     addNewTodoItem() {
       const data = {
         key: Date.now(),
@@ -26,34 +25,52 @@ export default {
       this.$setLocalStorage('todoList', this.todoList);
     },
     deleteTodoItem(target) {
-      this.todoList.splice(target, 1);
+      this.todoList.splice(this.todoList.indexOf(target), 1);
       this.$setLocalStorage('todoList', this.todoList);
     },
-    // about completed
+    clearTodoList() {
+      this.todoList = [];
+      this.$setLocalStorage('todoList', this.todoList);
+    },
     isCompleted() {
       this.$setLocalStorage('todoList', this.todoList);
     },
-    selectAll() {
-      let status = null;
-
-      if (this.completedNum === this.todoList.length) status = false;
-      else status = true;
-
-      this.todoList.forEach((item) => {
-        item.completed = status;
-      });
-
-      this.$setLocalStorage('todoList', this.todoList);
+    switchStatus(target) {
+      this.status = target;
     },
   },
   computed: {
     completedNum() {
       return this.todoList.filter((item) => item.completed).length;
     },
-  },
-  watch: {
-    completedNum() {
-      this.all = this.completedNum === this.todoList.length ? true : false;
+    filterTodoList() {
+      if (this.status === 'active') {
+        return this.todoList.filter((item) => !item.completed);
+      }
+
+      if (this.status === 'completed') {
+        return this.todoList.filter((item) => item.completed);
+      }
+
+      return this.todoList;
+    },
+    all: {
+      get() {
+        if (this.todoList.length === 0) return false;
+        return this.completedNum === this.todoList.length ? true : false;
+      },
+      set() {
+        let status = null;
+
+        if (this.completedNum === this.todoList.length) status = false;
+        else status = true;
+
+        this.todoList.forEach((item) => {
+          item.completed = status;
+        });
+
+        this.$setLocalStorage('todoList', this.todoList);
+      },
     },
   },
   created() {
@@ -66,8 +83,10 @@ export default {
 <template>
   <v-container class="d-flex align-center justify-center">
     <div class="todo-list">
+      <h1>Todos</h1>
+
       <div class="header d-flex">
-        <v-checkbox v-model="all" color="success" @click="selectAll"></v-checkbox>
+        <v-checkbox v-model="all" color="success" v-if="todoList.length > 0"></v-checkbox>
         <v-text-field
           solo
           v-model="todo"
@@ -77,12 +96,8 @@ export default {
       </div>
 
       <div class="main">
-        <div class="todo-list-item d-flex" v-for="(todo, key) in todoList" :key="todo.key">
-          <v-checkbox
-            color="success"
-            v-model="todo.completed"
-            @click="isCompleted(todo, key)"
-          ></v-checkbox>
+        <div class="todo-list-item d-flex" v-for="todo in filterTodoList" :key="todo.key">
+          <v-checkbox color="success" v-model="todo.completed" @click="isCompleted"></v-checkbox>
           <v-text-field
             solo
             v-model="todo.text"
@@ -101,16 +116,34 @@ export default {
           <v-btn class="ml-3" color="success" elevation="3" v-else @click="confirmTodoItem(todo)">
             Confirm
           </v-btn>
-          <v-btn class="ml-3" color="error" elevation="3" @click="deleteTodoItem(key)">
+          <v-btn class="ml-3" color="error" elevation="3" @click="deleteTodoItem(todo)">
             Delete
           </v-btn>
         </div>
       </div>
 
-      <div class="footer">
-        <v-btn class="mr-6">All</v-btn>
-        <v-btn class="mr-6">Active</v-btn>
-        <v-btn>Completed</v-btn>
+      <div class="footer d-flex" v-if="todoList.length > 0">
+        <v-btn
+          class="mr-6"
+          :class="{ 'footer-btn-active': status === 'all' }"
+          @click="switchStatus('all')"
+        >
+          All
+        </v-btn>
+        <v-btn
+          class="mr-6"
+          :class="{ 'footer-btn-active': status === 'active' }"
+          @click="switchStatus('active')"
+        >
+          Active
+        </v-btn>
+        <v-btn
+          :class="{ 'footer-btn-active': status === 'completed' }"
+          @click="switchStatus('completed')"
+        >
+          Completed
+        </v-btn>
+        <v-btn class="ml-auto" dark color="orange" @click="clearTodoList">Clear All</v-btn>
       </div>
     </div>
   </v-container>
@@ -122,11 +155,25 @@ export default {
 
   .todo-list {
     width: 600px;
+    margin-bottom: 320px;
+
+    h1 {
+      color: rgba(175, 47, 47, 0.25);
+      font-size: 100px;
+      text-align: center;
+    }
 
     .footer {
       padding-left: 52px;
     }
   }
+}
+
+// active
+
+.footer-btn-active {
+  color: white !important;
+  background-color: #9c27b0 !important;
 }
 
 // vuetify
