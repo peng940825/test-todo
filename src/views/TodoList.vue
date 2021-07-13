@@ -1,15 +1,18 @@
 <script>
 export default {
   data: () => ({
+    all: false,
     todo: '',
-    todoList: null,
+    todoList: [],
   }),
   methods: {
+    // about todo item
     addNewTodoItem() {
       const data = {
         key: Date.now(),
         text: this.todo,
         disabled: true,
+        completed: false,
       };
       this.todoList.push(data);
       this.$setLocalStorage('todoList', this.todoList);
@@ -26,6 +29,32 @@ export default {
       this.todoList.splice(target, 1);
       this.$setLocalStorage('todoList', this.todoList);
     },
+    // about completed
+    isCompleted() {
+      this.$setLocalStorage('todoList', this.todoList);
+    },
+    selectAll() {
+      let status = null;
+
+      if (this.completedNum === this.todoList.length) status = false;
+      else status = true;
+
+      this.todoList.forEach((item) => {
+        item.completed = status;
+      });
+
+      this.$setLocalStorage('todoList', this.todoList);
+    },
+  },
+  computed: {
+    completedNum() {
+      return this.todoList.filter((item) => item.completed).length;
+    },
+  },
+  watch: {
+    completedNum() {
+      this.all = this.completedNum === this.todoList.length ? true : false;
+    },
   },
   created() {
     if (!this.$getLocalStorage('todoList')) this.$setLocalStorage('todoList', []);
@@ -38,7 +67,7 @@ export default {
   <v-container class="d-flex align-center justify-center">
     <div class="todo-list">
       <div class="header d-flex">
-        <v-checkbox color="success" value="success" hide-details></v-checkbox>
+        <v-checkbox v-model="all" color="success" @click="selectAll"></v-checkbox>
         <v-text-field
           solo
           v-model="todo"
@@ -49,7 +78,11 @@ export default {
 
       <div class="main">
         <div class="todo-list-item d-flex" v-for="(todo, key) in todoList" :key="todo.key">
-          <v-checkbox color="success" value="success" hide-details></v-checkbox>
+          <v-checkbox
+            color="success"
+            v-model="todo.completed"
+            @click="isCompleted(todo, key)"
+          ></v-checkbox>
           <v-text-field
             solo
             v-model="todo.text"
